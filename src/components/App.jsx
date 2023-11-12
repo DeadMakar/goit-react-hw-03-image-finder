@@ -5,7 +5,7 @@ import { Searchbar } from './SearchBar/SearchBar';
 import { LoadMoreBtn } from './LoadMoreBtn/LoadMoreBtn';
 import { Loader } from './Loader/Loader';
 import { MyModal } from './Modal/Modal';
-import { ToastContainer, toast } from 'react-toastify';
+import toast, { Toaster } from 'react-hot-toast';
 import { GlobalStyle } from './GlobalStyle';
 
 export class App extends Component {
@@ -13,29 +13,37 @@ export class App extends Component {
     dataImages: [],
     searchQuery: '',
     page: 1,
+    per_page: 12,
     isLoading: false,
     error: false,
     showModal: false,
     largeImageURL: '',
     tagImageAlt: '',
+    availablePages: 0,
   };
 
   async componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page } = this.state;
+    const { searchQuery, page, per_page, availablePages } = this.state;
 
-    if (
-      (prevState.searchQuery !== searchQuery || prevState.page !== page) &&
-      !this.state.isLoading
-    ) {
-      const clearName = this.state.searchQuery.split('/')[1];
+    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
+      const clearName = searchQuery.split('/')[1];
       try {
         this.setState({ isLoading: true, error: false });
-        const initialImages = await fetchImages(clearName, this.state.page);
-        this.setState({ dataImages: initialImages, page: 1 });
-      } catch (error) {
-        if (this.state.dataImages.length === 0) {
-          toast.error(`${clearName} not found`);
+        const initialImages = await fetchImages(clearName, page);
+        this.setState(prevState => {
+          return {
+            dataImages: [...prevState.dataImages, ...initialImages.hits],
+            availablePages: Math.ceil(initialImages.totalHits / per_page),
+          };
+        });
+        if (availablePages > 0) {
+          toast.success('Successfully found!');
+        } else {
+          toast.error(
+            'Nothing found. Check the correctness of the search word.'
+          );
         }
+      } catch (error) {
         this.setState({ error });
       } finally {
         this.setState({ isLoading: false });
@@ -76,6 +84,8 @@ export class App extends Component {
 
   render() {
     const {
+      page,
+      availablePages,
       dataImages,
       showModal,
       largeImageURL,
@@ -105,7 +115,7 @@ export class App extends Component {
               </b>
             )}
 
-            {dataImages.length >= 11 && (
+            {page !== availablePages && dataImages.length >= 11 && (
               <LoadMoreBtn onLoadMore={this.handleLoadMore} />
             )}
           </>
@@ -117,7 +127,7 @@ export class App extends Component {
           </MyModal>
         )}
         <GlobalStyle />
-        <ToastContainer autoClose={3000} />
+        <Toaster />
       </div>
     );
   }

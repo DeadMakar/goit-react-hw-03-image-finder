@@ -38,7 +38,7 @@ export const SearchBtn = styled.button`
   cursor: pointer;
   outline: none;
 
-  :hover {
+  &:hover {
     opacity: 1;
   }
 `;
@@ -63,7 +63,7 @@ export const SearchFormInputStyled = styled.input`
   padding-left: 4px;
   padding-right: 4px;
 
-  ::placeholder {
+  &::placeholder {
     font: inherit;
     font-size: 18px;
   }

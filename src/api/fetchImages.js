@@ -14,5 +14,5 @@ export async function fetchImages(searchQuery, page) {
   });
 
   const response = await axios.get(`${BASE_URL}?${searchParams}`);
-  return response.data.hits;
+  return response.data;
 }
