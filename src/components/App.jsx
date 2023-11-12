@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React, { Component } from 'react';
 import { fetchImages } from 'api/fetchImages';
 import { ImageGallery } from './Gallery/ImageGallery/ImageGallery';
 import { Searchbar } from './SearchBar/SearchBar';
@@ -7,6 +7,7 @@ import { Loader } from './Loader/Loader';
 import { MyModal } from './Modal/Modal';
 import toast, { Toaster } from 'react-hot-toast';
 import { GlobalStyle } from './GlobalStyle';
+import { animateScroll as scroll } from 'react-scroll';
 
 export class App extends Component {
   state = {
@@ -23,20 +24,21 @@ export class App extends Component {
   };
 
   async componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page, per_page, availablePages } = this.state;
+    const { searchQuery, page, per_page } = this.state;
 
     if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
       const clearName = searchQuery.split('/')[1];
       try {
         this.setState({ isLoading: true, error: false });
         const initialImages = await fetchImages(clearName, page);
-        this.setState(prevState => {
-          return {
-            dataImages: [...prevState.dataImages, ...initialImages.hits],
-            availablePages: Math.ceil(initialImages.totalHits / per_page),
-          };
-        });
-        if (availablePages > 0) {
+        const { hits, totalHits } = initialImages;
+
+        if (hits.length > 0) {
+          this.setState(prevState => ({
+            dataImages: [...prevState.dataImages, ...hits],
+            availablePages: Math.ceil(totalHits / per_page),
+          }));
+
           toast.success('Successfully found!');
         } else {
           toast.error(
@@ -60,9 +62,14 @@ export class App extends Component {
   };
 
   handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+    this.setState(
+      prevState => ({
+        page: prevState.page + 1,
+      }),
+      () => {
+        scroll.scrollToBottom();
+      }
+    );
   };
 
   handleOpenModal = image => {
