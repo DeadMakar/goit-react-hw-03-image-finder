@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { fetchImages } from 'api/fetchImages';
 import { ImageGallery } from './Gallery/ImageGallery/ImageGallery';
 import { Searchbar } from './SearchBar/SearchBar';
@@ -8,6 +8,7 @@ import { MyModal } from './Modal/Modal';
 import toast, { Toaster } from 'react-hot-toast';
 import { GlobalStyle } from './GlobalStyle';
 import { animateScroll as scroll } from 'react-scroll';
+import { generateRandomIndex } from './utils/generateRandomIndex';
 
 export class App extends Component {
   state = {
@@ -21,16 +22,20 @@ export class App extends Component {
     largeImageURL: '',
     tagImageAlt: '',
     availablePages: 0,
+    randomIndex: generateRandomIndex(),
   };
 
   async componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page, per_page } = this.state;
+    const { searchQuery, page, per_page, randomIndex } = this.state;
 
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      const clearName = searchQuery.split('/')[1];
+    if (
+      prevState.searchQuery !== searchQuery ||
+      prevState.page !== page ||
+      prevState.randomIndex !== randomIndex
+    ) {
       try {
         this.setState({ isLoading: true, error: false });
-        const initialImages = await fetchImages(clearName, page);
+        const initialImages = await fetchImages(searchQuery, page);
         const { hits, totalHits } = initialImages;
 
         if (hits.length > 0) {
@@ -54,11 +59,12 @@ export class App extends Component {
   }
 
   handleFormSubmit = newQuery => {
-    this.setState({
-      searchQuery: `${Date.now()}/${newQuery}`,
+    this.setState(prevState => ({
+      searchQuery: newQuery,
       page: 1,
       dataImages: [],
-    });
+      randomIndex: generateRandomIndex(),
+    }));
   };
 
   handleLoadMore = () => {
@@ -109,23 +115,15 @@ export class App extends Component {
 
         {error && <h1>{error.message}</h1>}
 
-        {!isLoading && !error && (
-          <>
-            <ImageGallery
-              dataImages={dataImages}
-              onOpenModal={this.handleOpenModal}
-            />
+        {dataImages.length > 0 && (
+          <ImageGallery
+            dataImages={dataImages}
+            onOpenModal={this.handleOpenModal}
+          />
+        )}
 
-            {error && (
-              <b>
-                Oops! Something went wrong! Please try reloading this page! 🥹
-              </b>
-            )}
-
-            {page !== availablePages && dataImages.length >= 11 && (
-              <LoadMoreBtn onLoadMore={this.handleLoadMore} />
-            )}
-          </>
+        {page !== availablePages && dataImages.length >= 11 && !error && (
+          <LoadMoreBtn onLoadMore={this.handleLoadMore} />
         )}
 
         {showModal && (
@@ -133,6 +131,11 @@ export class App extends Component {
             <img src={largeImageURL} alt={tagImageAlt} />
           </MyModal>
         )}
+
+        {error && (
+          <b>Oops! Something went wrong! Please try reloading this page! 🥹</b>
+        )}
+
         <GlobalStyle />
         <Toaster />
       </div>
